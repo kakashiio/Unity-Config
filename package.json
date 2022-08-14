@@ -1,0 +1,21 @@
+{
+    "name": "io.unity3d.source.config",
+    "displayName": "Source Framework Config",
+    "version": "1.0.0",
+    "unity": "2020.3",
+    "description": "Component in Source Framework - Parse data into config and manager the config.",
+    "dependencies": {
+    },
+    "author": {
+        "name": "Kakashi",
+        "email": "john.cha@qq.com",
+        "url": "https://github.com/kakashiio/Unity-Config"
+    },
+    "samples": [
+        {
+            "displayName": "Baisc usage about the excel config manager",
+            "description": "Baisc usage about the excel config manager",
+            "path": "Samples~/Basic"
+        }
+    ]
+}
