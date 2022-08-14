@@ -65,8 +65,6 @@ And then use to create struct instance from excel data.
     ExcelUtils.Parse<ConfigCharacter>(excel, (c)=>Debug.Log(c));
 ```
 
-
-
 # How to use
 
 ## Add dependencies
@@ -86,16 +84,162 @@ The basic usage of this library is in the sample script `BasicDemo.cs`
 
 # Features
 
-| Feature | Status |
-|--|--|
-|Auto inject field or property| `DONE` |
-|Inject field or property by configuration| `DONE` |
-|Instance's life cycle| `DONE` |
-|IOCContainer's life cycle| `DONE` |
-|Multi IOCContainers with difference configuration| `DONE` |
-|Configuration from file| `FUTURE` |
-|AOP| `FUTURE` |
+| Feature | Status | Description |
+|--|--|--|
+|ORM| `DONE` | Mapping raw excel data to config data |
+|ExcelManager| `DONE` | Manager the config data. |
 
 # Tutorial
 
-Would be writen some days ago.
+## Simple usage 1 - without ExcelManager
+
+```csharp
+class ConfigCharacter
+{
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(0)]
+    public int ID;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(1)]
+    public int Team;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(2)]
+    public int TeamID;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(3)]
+    public string Name;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(4)]
+    public int[] SkillIDs;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(5)]
+    public Dictionary<int, int> Costs;
+}
+```
+
+```csharp
+    // You can implement the `IExcel` occording your excel parser library.
+    IExcel excel = new StaticExcel(new List<IExcelRow>()
+        {
+            // ID Team TeamIndex Name SkillID
+            new StaticExcelRow(new object[] { 1001, 1, 1, "Kakashi", "1001; 1002; 1003; 1004", "1,100;2,200" }),
+            new StaticExcelRow(new object[] { 1002, 1, 2, "Naruto", "1001; 1002", "1,99" }),
+            new StaticExcelRow(new object[] { 1003, 1, 3, "Sasuke", "1001; 1002; 1003", "1,80" }),
+            new StaticExcelRow(new object[] { 1004, 1, 4, "Sakura", "1001", "1,60" }),
+            new StaticExcelRow(new object[] { 1005, 2, 1, "Kai", "1001; 1002; 1003", "1,50;2,100" }),
+            new StaticExcelRow(new object[] { 1006, 2, 2, "Lee", "1001; 1002", "1,80" }),
+            new StaticExcelRow(new object[] { 1007, 2, 3, "Neji", "1001; 1002; 1003", "1,70" }),
+            new StaticExcelRow(new object[] { 1008, 2, 4, "Hinata", "1001", "1,65" })
+        });
+
+    ExcelUtils.Parse<ConfigCharacter>(excel, (c)=>Debug.Log(c));    //output all data.
+```
+
+## Simple usage 2 - with ExcelManager
+
+```csharp
+class ConfigCharacter
+{
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(0)]
+    [ExcelDictKey(ID = 0)]
+    public int ID;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(1)]
+    [ExcelDictKey(ID = 1, KeyType = typeof(TeamID))]
+    [ExcelListKey]
+    public int Team;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(2)]
+    [ExcelDictKey(ID = 1, KeyPropNameAlias = "TeamIndex")]
+    public int TeamID;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(3)]
+    public string Name;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(4)]
+    public int[] SkillIDs;
+    
+    [ExcelColumn(ExcelColumn.Mode.Index)]
+    [ExceColumnIndex(5)]
+    public Dictionary<int, int> Costs;
+}
+```
+
+```csharp
+class TeamID
+{
+    public int Team;
+    public int TeamIndex;
+
+    public TeamID(int team, int teamIndex)
+    {
+        Team = team;
+        TeamIndex = teamIndex;
+    }
+
+    public TeamID()
+    {
+    }
+
+    public override int GetHashCode()
+    {
+        return Team ^ TeamIndex;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        
+        if (base.Equals(obj))
+        {
+            return true;
+        }
+        
+        var teamID = obj as TeamID;
+        if (teamID == null)
+        {
+            return false;
+        }
+
+        return teamID.Team == Team && teamID.TeamIndex == TeamIndex;
+    }
+}
+```
+
+
+```csharp
+    // You can implement the `IExcel` occording your excel parser library.
+    IExcel excel = new StaticExcel(new List<IExcelRow>()
+        {
+            // ID Team TeamIndex Name SkillID
+            new StaticExcelRow(new object[] { 1001, 1, 1, "Kakashi", "1001; 1002; 1003; 1004", "1,100;2,200" }),
+            new StaticExcelRow(new object[] { 1002, 1, 2, "Naruto", "1001; 1002", "1,99" }),
+            new StaticExcelRow(new object[] { 1003, 1, 3, "Sasuke", "1001; 1002; 1003", "1,80" }),
+            new StaticExcelRow(new object[] { 1004, 1, 4, "Sakura", "1001", "1,60" }),
+            new StaticExcelRow(new object[] { 1005, 2, 1, "Kai", "1001; 1002; 1003", "1,50;2,100" }),
+            new StaticExcelRow(new object[] { 1006, 2, 2, "Lee", "1001; 1002", "1,80" }),
+            new StaticExcelRow(new object[] { 1007, 2, 3, "Neji", "1001; 1002; 1003", "1,70" }),
+            new StaticExcelRow(new object[] { 1008, 2, 4, "Hinata", "1001", "1,65" })
+        });
+
+    ExcelManager excelManager = new ExcelManager();
+    excelManager.Load<ConfigCharacter>(new StaticExcelStream(excel));
+    
+    Debug.LogError(excelManager.Get<ConfigCharacter>(1001));                //output which ID == 1001
+    Debug.LogError(excelManager.Get<ConfigCharacter>(1008));                //output which ID == 1008
+    Debug.LogError(excelManager.Get<ConfigCharacter>(new TeamID(1,1)));     //output which Team == 1 && TeamID == 1
+    Debug.LogError(excelManager.Get<ConfigCharacter>(new TeamID(1,2)));     //output which Team == 1 && TeamID == 2
+```
